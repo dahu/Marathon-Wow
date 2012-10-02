@@ -13,9 +13,9 @@ How It Works
 The program shows a list of 20 words labelled A to T. A single student
 stands back-facing this list. Other students have to call out to the
 computer operator (teacher) which letter they want to describe to the
-standing student, after which any student in the room may attempt to
-use their second language to describe the word in an attempt to make
-the standing student say the word. If the student gets the word right,
+standing student, after which any student in the room can use their
+second language to describe the word in an attempt to make the
+standing student say the word. If the student gets the word right,
 then that word is marked as CORRECT by pressing the lower-case letter
 associated with the word. If anyone says the actual target word, then
 that word is marked as FAILED by pressing the capital letter
@@ -27,13 +27,15 @@ student may opt to PASS the current word if it's eating too much time
 after which another sitting student should nominate a different target
 word, beginning the process anew. This description makes it seem way
 more complicated than it really is. The hardest part for the teacher
-is to establish the various ``cheating'' conditions which receive
+is to establish the various ``cheating'' conditions and their
 penalties.
 
 Currently it simply loads the words in ++words.txt++ but this should
 have a more friendly interface in a future revision.
 
 It _should_ support UTF-8 (providing your newLISP is UTF-8 capable).
+
+Thanks to Cormullion for various aesthetic improvements.
 
 Feedback welcome.
 
