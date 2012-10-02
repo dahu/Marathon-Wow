@@ -43,21 +43,27 @@
 (gs:key-event 'WordPanel 'key-action)
 (gs:set-grid-layout 'WordPanel 10 2)
 
+(define (between max_v min_v val) (and (<= max_v val) (>= min_v val)))
+
 (define (key-action id type code modifiers)
-  (println "id:" id " type:" type " key code:" code " modifiers:" modifiers)
-  (if (and (!= 1 Timer:paused) (= type "pressed") (!= code 16))
+  ;(println "id:" id " type:" type " key code:" code " modifiers:" modifiers)
+  (when (and (= 0 Timer:paused)
+             (= type "pressed")
+             (!= code 16)
+             (or (between "a" "t" (char code))
+                 (between "A" "T" (char code))
+             ))
     (if (= modifiers 0)
      (mark-right (char code))
-     (mark-wrong (char code))))
-)
+     (mark-wrong (char code)))))
 
 (define (mark-right label)
-  (gs:set-foreground (sym (string "Word_" label)) 0.3 .8 0.3)
+  (map (fn (l) (gs:set-foreground l 0.3 0.8 0.3)) (WordEngine:WordLabels label))
   (Score:Increase)
 )
 
 (define (mark-wrong label)
-  (gs:set-foreground (sym (string "Word_" label)) 1 0.4 0.4)
+  (map (fn (l) (gs:set-foreground l 1.0 0.4 0.4)) (WordEngine:WordLabels label))
   (Score:Decrease)
 )
 
@@ -92,12 +98,17 @@
 
 (define (quit-action) (exit))
 
-(gs:slider 'WordSizeSlider 'change-word-size "horizontal" 32 72 48)
+(gs:panel 'WordSizeSliderPanel)
+(gs:set-grid-layout 'WordSizeSliderPanel 2 1)
+(gs:label 'WordSizeSliderLabel "Font Size")
+(gs:set-font 'WordSizeSliderLabel "Arial Bold" 22 "plain")
+(gs:slider 'WordSizeSlider 'change-word-size "horizontal" 32 72 32)
+(gs:add-to 'WordSizeSliderPanel 'WordSizeSliderLabel 'WordSizeSlider)
 
 (define (change-word-size slider size)
   (WordEngine:SetWordSize size))
 
-(gs:add-to 'ButtonPanel 'ScoreTitleLabel 'ScoreLabel 'TimerTitleLabel 'TimerLabel 'RestartButton 'PauseButton 'QuitButton 'WordSizeSlider)
+(gs:add-to 'ButtonPanel 'ScoreTitleLabel 'ScoreLabel 'TimerTitleLabel 'TimerLabel 'RestartButton 'PauseButton 'QuitButton 'WordSizeSliderPanel)
 (gs:add-to 'MainPane 'WordPanel 'ButtonPanel)
 
 (gs:add-to 'Wow 'MainPane "center")
@@ -164,25 +175,41 @@
 ;; WordEngine
 
 (setf WordEngine:Words (clean empty? (parse (read-file "./words.txt") {\n} 0)))
-(setf WordEngine:WordSize 48)
+(setf WordEngine:WordSize 32)
+(setf WordEngine:LabelFont "")
 (setf WordEngine:WordFont "")   ; specifying a font seems to cause linux to not show chinese characters
                                 ; untested on windows
 
+(define (WordEngine:WordLabels handle)
+  (list  (sym (string "Word_l_" handle) 'MAIN) (sym (string "Word_w_" handle) 'MAIN)))
+
+(define (WordEngine:WordLabelsPanel handle)
+  (sym (string "Panel_" handle) 'MAIN))
+
 (define (WordEngine:SpreadWords , label handle)
+  ; remove any existing word labels
   (setf handle "A")
-    (dotimes (n 20)
-      (setf label (sym (string "Word_" handle) 'MAIN))
-      (gs:remove-from 'WordPanel label)
-      (setf handle (char (inc (char handle))))
-    )
-  (setf handle "A")
-  (dolist (w (randomize WordEngine:Words) (= $idx 20))
-    (setf label (sym (string "Word_" handle) 'MAIN))
-    (gs:label label (string "{" handle "} " w) 300 50)
-    (gs:set-font label WordEngine:WordFont WordEngine:WordSize "plain")
-    (gs:add-to 'WordPanel label)
+  (dotimes (n 20)
+    (setf panel (WordEngine:WordLabelsPanel handle))
+    (gs:remove-from 'WordPanel panel)
     (setf handle (char (inc (char handle))))
   )
+  ; create new labels
+  (setf handle "A")
+  (dolist (w (randomize WordEngine:Words) (= $idx 20))
+    (setf panel (WordEngine:WordLabelsPanel handle))
+    (map set '(label_l label_w) (WordEngine:WordLabels handle))
+    (gs:panel panel)
+    (gs:set-flow-layout panel "left")
+    (gs:label label_l handle "left" 100 100)
+    (gs:set-foreground label_l 0.1 0.1 1.0)
+    (gs:label label_w w)
+    (gs:add-to panel label_l label_w)
+    (gs:add-to 'WordPanel panel)
+    (setf handle (char (inc (char handle))))
+  )
+  ; resize labels
+  (WordEngine:SetWordSize WordEngine:WordSize)
   (gs:layout 'WordPanel)
 )
 
@@ -190,8 +217,9 @@
   (setf WordEngine:WordSize size)
   (setf handle "A")
   (dotimes (n 20)
-    (setf label (sym (string "Word_" handle) 'MAIN))
-    (gs:set-font label WordEngine:WordFont size "plain")
+    (map set '(label_l label_w) (WordEngine:WordLabels handle))
+    (gs:set-font label_l WordEngine:LabelFont size "plain")
+    (gs:set-font label_w WordEngine:WordFont size "plain")
     (setf handle (char (inc (char handle))))))
 
 ;; Score
